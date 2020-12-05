@@ -256,13 +256,23 @@ namespace fefu
 
         /// Copy constructor.
         hash_map(const hash_map& other) {
-            table = other.table;
-            firstHash = other.firstHash;
-            secondHash = other.secondHash;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            deleted = other.deleted;
+            table = table_allocator.allocate(SIZE);
+            deleted = deleted_allocator.allocate(SIZE);
+            for(int i = 0; i < SIZE; i++) {
+                table[i] = nullptr;
+                deleted[i] = false;
+            }
 
+            for(int i = 0; i < other.SIZE; i++) {
+                if(table[i])
+                    insert({table[i]->first, table[i]->second});
+                deleted[i] = other.deleted[i];
+            }
+
+            firstHash = other.firstHash;
+            secondHash = other.secondHash;
         }
 
         /// Move constructor.
@@ -272,6 +282,13 @@ namespace fefu
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
             table_allocator.deallocate(other.table, other.SIZE);
+
+            for(int i = 0; i < other.SIZE; i++) {
+                table[i] = nullptr;
+            }
+
+            table = nullptr;
+            deleted = nullptr;
         }
 
         /**
@@ -293,16 +310,49 @@ namespace fefu
         * @param  uset  Input %hash_map to copy.
         * @param  a  An allocator object.
         */
-        hash_map(const hash_map& umap,
-                 const allocator_type& a);
+        hash_map(const hash_map& other,
+                 const allocator_type& a) {
+            table_allocator = a;
+            SIZE = other.SIZE;
+            NOT_NULL_SIZE = other.NOT_NULL_SIZE;
+            table = table_allocator.allocate(SIZE);
+            deleted = deleted_allocator.allocate(SIZE);
+            for(int i = 0; i < SIZE; i++) {
+                table[i] = nullptr;
+                deleted[i] = false;
+            }
+
+            for(int i = 0; i < other.SIZE; i++) {
+                if(table[i])
+                    insert({table[i]->first, table[i]->second});
+                deleted[i] = other.deleted[i];
+            }
+
+            firstHash = other.firstHash;
+            secondHash = other.secondHash;
+        }
 
         /*
         *  @brief  Move constructor with allocator argument.
         *  @param  uset Input %hash_map to move.
         *  @param  a    An allocator object.
         */
-        hash_map(hash_map&& umap,
-                 const allocator_type& a);
+        hash_map(hash_map&& other,
+                 const allocator_type& a) : table(other.table), deleted(other.deleted)  {
+            table_allocator = a;
+            firstHash = other.firstHash;
+            secondHash = other.secondHash;
+            SIZE = other.SIZE;
+            NOT_NULL_SIZE = other.NOT_NULL_SIZE;
+            table_allocator.deallocate(other.table, other.SIZE);
+
+            for(int i = 0; i < other.SIZE; i++) {
+                table[i] = nullptr;
+            }
+
+            table = nullptr;
+            deleted = nullptr;
+        }
 
         /**
          *  @brief  Builds an %hash_map from an initializer_list.
@@ -313,22 +363,56 @@ namespace fefu
          *  list. This is linear in N (where N is @a l.size()).
          */
         hash_map(std::initializer_list<value_type> l,
-                 size_type n = 0);
+                 size_type n = 0) {
+            SIZE = n;
+            table = table_allocator.allocate(SIZE);
+            deleted = deleted_allocator.allocate(SIZE);
+            for(int i = 0; i < SIZE; i++) {
+                table[i] = nullptr;
+                deleted[i] = false;
+            }
+
+            for(int i = 0; i < l.size(); i++)
+                insert({l[i].first, l[i].second});
+        }
 
         /// Copy assignment operator.
         hash_map& operator=(const hash_map& other) {
+            SIZE = other.SIZE;
+            NOT_NULL_SIZE = other.NOT_NULL_SIZE;
+            table = table_allocator.allocate(SIZE);
+            deleted = deleted_allocator.allocate(SIZE);
+            for(int i = 0; i < SIZE; i++) {
+                table[i] = nullptr;
+                deleted[i] = false;
+            }
+
+            for(int i = 0; i < other.SIZE; i++) {
+                if(table[i])
+                    insert({table[i]->first, table[i]->second});
+                deleted[i] = other.deleted[i];
+            }
+
+            firstHash = other.firstHash;
+            secondHash = other.secondHash;
+        }
+
+        /// Move assignment operator.
+        hash_map& operator=(hash_map&& other) {
             table = other.table;
             deleted = other.deleted;
             firstHash = other.firstHash;
             secondHash = other.secondHash;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            deleted = other.deleted;
-        }
+            table_allocator.deallocate(other.table, other.SIZE);
 
-        /// Move assignment operator.
-        hash_map& operator=(hash_map&& other) {
+            for(int i = 0; i < other.SIZE; i++) {
+                table[i] = nullptr;
+            }
 
+            table = nullptr;
+            deleted = nullptr;
         }
 
         /**
@@ -343,7 +427,8 @@ namespace fefu
          *  of elements assigned.
          */
         hash_map& operator=(std::initializer_list<value_type> l) {
-
+            for(int i = 0; i < l.size(); i++)
+                insert({l[i].first, l[i].second});
         }
 
         ///  Returns the allocator object used by the %hash_map.
@@ -488,6 +573,8 @@ namespace fefu
         *  Insertion requires amortized constant time.
         */
         std::pair<iterator, bool> insert(const value_type& value)  {
+            if(SIZE == 0)
+                rehash(32);
             if(NOT_NULL_SIZE / SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
@@ -509,6 +596,8 @@ namespace fefu
         }
 
         std::pair<iterator, bool> insert(value_type&& value) {
+            if(SIZE == 0)
+                rehash(32);
             if((float)NOT_NULL_SIZE / (float)SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
