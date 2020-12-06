@@ -273,12 +273,14 @@ namespace fefu
 
             firstHash = other.firstHash;
             secondHash = other.secondHash;
+            key_equal = other.key_equal;
         }
 
         /// Move constructor.
         hash_map(hash_map&& other) : table(other.table), deleted(other.deleted) {
             firstHash = other.firstHash;
             secondHash = other.secondHash;
+            key_equal = other.key_equal;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
             table_allocator.deallocate(other.table, other.SIZE);
@@ -330,6 +332,7 @@ namespace fefu
 
             firstHash = other.firstHash;
             secondHash = other.secondHash;
+            key_equal = other.key_equal;
         }
 
         /*
@@ -341,6 +344,7 @@ namespace fefu
                  const allocator_type& a) : table(other.table), deleted(other.deleted)  {
             table_allocator = a;
             firstHash = other.firstHash;
+            key_equal = other.key_equal;
             secondHash = other.secondHash;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
@@ -395,6 +399,7 @@ namespace fefu
 
             firstHash = other.firstHash;
             secondHash = other.secondHash;
+            key_equal = other.key_equal;
         }
 
         /// Move assignment operator.
@@ -403,6 +408,7 @@ namespace fefu
             deleted = other.deleted;
             firstHash = other.firstHash;
             secondHash = other.secondHash;
+            key_equal = other.key_equal;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
             table_allocator.deallocate(other.table, other.SIZE);
@@ -522,8 +528,7 @@ namespace fefu
         */
         template<typename... _Args>
         std::pair<iterator, bool> emplace(_Args&&... args) {
-
-
+            return insert(value_type(std::forward<_Args>(args)...));
         }
 
         /**
@@ -549,11 +554,15 @@ namespace fefu
          *  Insertion requires amortized constant time.
          */
         template <typename... _Args>
-        std::pair<iterator, bool> try_emplace(const key_type& k, _Args&&... args);
+        std::pair<iterator, bool> try_emplace(const key_type& k, _Args&&... args){
+            return insert(value_type(std::piecewise_construct, std::forward_as_tuple(k), std::forward_as_tuple(std::forward<_Args>(args)...)));
+        }
 
         // move-capable overload
         template <typename... _Args>
-        std::pair<iterator, bool> try_emplace(key_type&& k, _Args&&... args);
+        std::pair<iterator, bool> try_emplace(key_type&& k, _Args&&... args) {
+            return insert(value_type(std::piecewise_construct, std::forward_as_tuple(k), std::forward_as_tuple(std::forward<_Args>(args)...)));
+        }
 
         //@{
         /**
@@ -855,11 +864,19 @@ namespace fefu
 
         ///  Returns the hash functor object with which the %hash_map was
         ///  constructed.
-        //Hash hash_function() const;
+        FirstHash first_hash_function() const {
+            return firstHash;
+        }
+
+        SecondHash second_hash_function() const {
+            return secondHash;
+        }
 
         ///  Returns the key comparison object with which the %hash_map was
         ///  constructed.
-        //Pred key_eq() const;
+        Pred key_eq() const {
+            return key_equal;
+        }
 
         // lookup.
 

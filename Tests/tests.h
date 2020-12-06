@@ -57,6 +57,22 @@ TEST (HashMapTesting, InsertOrAssignElements) {
 
 }
 
+TEST (HashMapTesting, EmplaceElements) {
+    fefu::hash_map<int, char> a;
+   a.emplace(10,'s');
+    a.emplace(20,'s');
+   a.emplace(std::piecewise_construct,
+             std::forward_as_tuple(30),
+             std::forward_as_tuple('w'));
+
+
+    ASSERT_TRUE(a.contains(10));
+    ASSERT_TRUE(a.contains(20));
+    ASSERT_TRUE(a.contains(30));
+
+
+}
+
 TEST (HashMapTesting, EraseElements) {
     fefu::hash_map<int, char> a;
     a.insert({10, 's'});
