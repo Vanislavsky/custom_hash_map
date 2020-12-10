@@ -376,14 +376,6 @@ TEST (HashMapTesting, RehashTest) {
     ASSERT_TRUE(2 * max_size == a.max_size());
 }
 
-TEST (HashMapTesting, ReserveTest) {
-    fefu::hash_map<int, char> a;
-    a.reserve(10);
-    ASSERT_TRUE(a.max_size() == 10);
-}
-
-
-
 //custom_class for tests
 class my_class {
 public:

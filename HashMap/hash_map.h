@@ -400,6 +400,8 @@ namespace fefu
             firstHash = other.firstHash;
             secondHash = other.secondHash;
             key_equal = other.key_equal;
+
+            return *this;
         }
 
         /// Move assignment operator.
@@ -419,6 +421,8 @@ namespace fefu
 
             table = nullptr;
             deleted = nullptr;
+
+            return *this;
         }
 
         /**
@@ -435,6 +439,7 @@ namespace fefu
         hash_map& operator=(std::initializer_list<value_type> l) {
             for(int i = 0; i < l.size(); i++)
                 insert({l[i].first, l[i].second});
+            return *this;
         }
 
         ///  Returns the allocator object used by the %hash_map.
@@ -1093,14 +1098,7 @@ namespace fefu
          *  Same as rehash(ceil(n / max_load_factor())).
          */
         void reserve(size_type n) {
-            SIZE = n;
-            NOT_NULL_SIZE = 0;
-            table = table_allocator.allocate(SIZE);
-            deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            rehash(ceil((float)n / (float)max_load_factor()));
         }
     };
 
