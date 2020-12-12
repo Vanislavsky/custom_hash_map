@@ -231,7 +231,7 @@ namespace fefu
         using size_type = std::size_t;
 
     private:
-        size_type SIZE = 32;
+        size_type SIZE = 37;
         size_type NOT_NULL_SIZE = 0;
         float LOAD_FACTOR = 0.7;
         value_type **table;
@@ -255,7 +255,7 @@ namespace fefu
         }
 
         ~hash_map() {
-            for (int i = 0; i < SIZE; ++i)
+            for (int i = 0; i < SIZE; i++)
                 if (table[i])
                     delete table[i];
             table_allocator.deallocate(table,SIZE);
@@ -519,7 +519,7 @@ namespace fefu
          */
         iterator begin() noexcept {
             for(int i = 0; i < SIZE; i++) {
-                if(table[i] != nullptr) {
+                if(table[i] != nullptr && deleted[i] == false) {
                     return iterator(table + i, deleted, i, SIZE);
                 }
             }
@@ -537,7 +537,7 @@ namespace fefu
 
         const_iterator cbegin() const noexcept {
             for(int i = 0; i < SIZE; i++) {
-                if(table[i] != nullptr)
+                if(table[i] != nullptr && deleted[i] == false)
                     return const_iterator(table + i, deleted, i, SIZE);
             }
             return cend();
@@ -867,10 +867,21 @@ namespace fefu
          *  elements themselves are pointers, the pointed-to memory is not touched
          *  in any way.  Managing the pointer is the user's responsibility.
          */
-         //TODO
         void clear() noexcept {
-            hash_map(SIZE);
+            for (int i = 0; i < SIZE; i++)
+                if (table[i])
+                    delete table[i];
+            table_allocator.deallocate(table,SIZE);
+            deleted_allocator.deallocate(deleted, SIZE);
+
+            SIZE = 37;
             NOT_NULL_SIZE = 0;
+            table = table_allocator.allocate(SIZE);
+            deleted = deleted_allocator.allocate(SIZE);
+            for(int i = 0; i < SIZE; i++) {
+                table[i] = nullptr;
+                deleted[i] = false;
+            }
         }
 
         /**

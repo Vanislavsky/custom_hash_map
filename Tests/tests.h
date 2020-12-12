@@ -234,6 +234,7 @@ TEST (HashMapTesting, IteratorTest) {
     max_count = 0;
 
     for(it = a.begin(); it != a.end(); ++it) {
+        std::cout << (*it)->second;
         max_count++;
     }
 
@@ -363,6 +364,9 @@ TEST (HashMapTesting, ClearAllTest) {
     a.clear();
 
     ASSERT_TRUE(a.empty());
+    ASSERT_TRUE(!a.contains(5));
+    ASSERT_TRUE(!a.contains(3));
+    ASSERT_TRUE(!a.contains(9));
 }
 
 TEST (HashMapTesting, RehashTest) {
@@ -393,6 +397,10 @@ TEST (HashMapTesting, RehashTest) {
     a.insert({218, 'a'});
     a.insert({558, 'g'});
     a.insert({48, 'l'});
+    a.insert({482, 'r'});
+    a.insert({481, 'p'});
+    a.insert({889, 'r'});
+    a.insert({777, 'p'});
 
     ASSERT_TRUE(2 * max_size == a.max_size());
 }
