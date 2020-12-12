@@ -40,6 +40,19 @@ TEST (HashMapTesting, InsertElements) {
 
 
 
+//TEST (HashMapTesting, test) {
+//    fefu::hash_map<int, int> a;
+//    for(int i = 0; i < 500; i++) {
+//        a.insert({i * 3, i * 4});
+//    }
+//
+////    for(int i = 0; i < 100; i++) {
+////        a.contains(i * 3);
+////    }
+//}
+
+
+
 TEST (HashMapTesting, InsertOrAssignElements) {
     fefu::hash_map<int, char> a;
     a.insert_or_assign(10, 's');
@@ -195,22 +208,17 @@ TEST (HashMapTesting, IteratorTest) {
     fefu::hash_map<int, char>::iterator it;
     for(it = a.begin(); it != a.end(); ++it) {
         max_count++;
-
-        if(*it != nullptr) {
-            count++;
-            if((*it)->second == 's') {
-                check_s = true;
-                (*it)->second = 'i';
-                ASSERT_TRUE((*it)->second == 'i');
-            }
-            if((*it)->second == 'l')
-                check_l = true;
-            if((*it)->second == 'd')
-                check_d = true;
-            if((*it)->second == 'q')
-                check_q = true;
-
+        if((*it)->second == 's') {
+            check_s = true;
+            (*it)->second = 'i';
+            ASSERT_TRUE((*it)->second == 'i');
         }
+        if((*it)->second == 'l')
+            check_l = true;
+        if((*it)->second == 'd')
+            check_d = true;
+        if((*it)->second == 'q')
+            check_q = true;
 
     }
 
@@ -219,8 +227,17 @@ TEST (HashMapTesting, IteratorTest) {
     ASSERT_TRUE(check_d);
     ASSERT_TRUE(check_q);
 
-    ASSERT_TRUE(max_count == a.max_size());
-    ASSERT_TRUE(count == a.size());
+    ASSERT_TRUE(max_count == a.size());
+
+    a.erase(222);
+    a.erase(5);
+    max_count = 0;
+
+    for(it = a.begin(); it != a.end(); ++it) {
+        max_count++;
+    }
+
+    ASSERT_TRUE(max_count == a.size());
 
 }
 
@@ -241,19 +258,14 @@ TEST (HashMapTesting, ConstIteratorTest) {
     fefu::hash_map<int, char>::const_iterator it;
     for(it = a.cbegin(); it != a.cend(); ++it) {
         max_count++;
-
-        if(*it != nullptr) {
-            count++;
-            if((*it)->second == 's')
-                check_s = true;
-            if((*it)->second == 'l')
-                check_l = true;
-            if((*it)->second == 'd')
-                check_d = true;
-            if((*it)->second == 'q')
-                check_q = true;
-
-        }
+        if((*it)->second == 's')
+            check_s = true;
+        if((*it)->second == 'l')
+            check_l = true;
+        if((*it)->second == 'd')
+            check_d = true;
+        if((*it)->second == 'q')
+            check_q = true;
 
     }
 
@@ -262,8 +274,17 @@ TEST (HashMapTesting, ConstIteratorTest) {
     ASSERT_TRUE(check_d);
     ASSERT_TRUE(check_q);
 
-    ASSERT_TRUE(max_count == a.max_size());
-    ASSERT_TRUE(count == a.size());
+    ASSERT_TRUE(max_count == a.size());
+
+    a.erase(222);
+    a.erase(5);
+    max_count = 0;
+
+    for(it = a.cbegin(); it != a.cend(); ++it) {
+        max_count++;
+    }
+
+    ASSERT_TRUE(max_count == a.size());
 
 }
 

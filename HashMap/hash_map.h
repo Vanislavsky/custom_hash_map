@@ -70,14 +70,30 @@ namespace fefu
 
         hash_map_iterator() noexcept {}
 
-        hash_map_iterator(pointer point): point(point) {}
+        hash_map_iterator(pointer point, bool* deleted, size_t cur_index, size_t size): point(point) {
+            this->deleted = new bool[size];
+            for(int i = 0;i < size; i++)
+                this->deleted[i] = deleted[i];
+            this->cur_index = cur_index;
+            this->size = size;
+        }
 
-        hash_map_iterator(const value_type& point) noexcept {
+        hash_map_iterator(const value_type& point, bool* deleted, size_t size) noexcept {
             this->point = point;
+            this->deleted = new bool[size];
+            for(int i = 0;i < size; i++)
+                this->deleted[i] = deleted[i];
+            this->cur_index = cur_index;
+            this-size = size;
         }
 
         hash_map_iterator(const hash_map_iterator& other) noexcept {
             point = other.point;
+            this->deleted = new bool[other.size];
+            for(int i = 0; i < other.size; i++)
+                this->deleted[i] = other.deleted[i];
+            this->cur_index = other.cur_index;
+            this->size = other.size;
         }
 
 
@@ -90,14 +106,21 @@ namespace fefu
 
         // prefix ++
         hash_map_iterator& operator++() {
-            auto temp = *this;
             point++;
-            return temp;
+            cur_index++;
+            while (cur_index < size) {
+                if(*point != nullptr && deleted[cur_index] == false)
+                    return *this;
+                else {
+                    point++;
+                    cur_index++;
+                }
+            }
+            return *this;
         }
         // postfix ++
         hash_map_iterator operator++(int) {
-            point++;
-            return *this;
+            return ++(*this);
         }
 
         friend bool operator==(const hash_map_iterator<ValueType>& l_point, const hash_map_iterator<ValueType>& r_point) {
@@ -109,6 +132,9 @@ namespace fefu
 
     private:
         pointer point;
+        bool* deleted;
+        size_t cur_index;
+        size_t size;
     };
 
 
@@ -127,11 +153,22 @@ namespace fefu
             point = other.point;
         }
 
-        hash_map_const_iterator(const pointer point): point(point) {}
+        hash_map_const_iterator(pointer point, bool* deleted, size_t cur_index, size_t size): point(point) {
+                this->deleted = new bool[size];
+                for(int i = 0;i < size; i++)
+                    this->deleted[i] = deleted[i];
+                this->cur_index = cur_index;
+                this->size = size;
+        }
         //ash_map_const_iterator(const hash_map_iterator<ValueType>& other) noexcept;
 
-        hash_map_const_iterator(const value_type& point) noexcept {
+        hash_map_const_iterator(const value_type& point, bool* deleted, size_t cur_index, size_t size) noexcept {
             this->point = point;
+            this->deleted = new bool[size];
+            for(int i = 0;i < size; i++)
+                this->deleted[i] = deleted[i];
+            this->cur_index = cur_index;
+            this-size = size;
         }
 
         reference operator*() const {
@@ -143,14 +180,21 @@ namespace fefu
 
         // prefix ++
         hash_map_const_iterator& operator++() {
-            auto temp = *this;
             point++;
-            return temp;
+            cur_index++;
+            while (cur_index < size) {
+                if(*point != nullptr && deleted[cur_index] == false)
+                    return *this;
+                else {
+                    point++;
+                    cur_index++;
+                }
+            }
+            return *this;
         }
         // postfix ++
         hash_map_const_iterator operator++(int) {
-            point++;
-            return *this;
+            return ++(*this);
         }
 
         friend bool operator==(const hash_map_const_iterator<ValueType>& l_point, const hash_map_const_iterator<ValueType>& r_point) {
@@ -162,6 +206,9 @@ namespace fefu
 
     private:
         const ValueType* point;
+        bool* deleted;
+        size_t cur_index;
+        size_t size;
     };
 
 
@@ -348,7 +395,7 @@ namespace fefu
             secondHash = other.secondHash;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            table_allocator.deallocate(other.table, other.SIZE);
+            //table_allocator.deallocate(other.table, other.SIZE);
 
             for(int i = 0; i < other.SIZE; i++) {
                 table[i] = nullptr;
@@ -471,7 +518,12 @@ namespace fefu
          *  %hash_map.
          */
         iterator begin() noexcept {
-            return table;
+            for(int i = 0; i < SIZE; i++) {
+                if(table[i] != nullptr) {
+                    return iterator(table + i, deleted, i, SIZE);
+                }
+            }
+            return end();
         }
 
         //@{
@@ -480,11 +532,15 @@ namespace fefu
          *  element in the %hash_map.
          */
         const_iterator begin() const noexcept {
-            return table;
+            return cbegin();
         }
 
         const_iterator cbegin() const noexcept {
-            return table;
+            for(int i = 0; i < SIZE; i++) {
+                if(table[i] != nullptr)
+                    return const_iterator(table + i, deleted, i, SIZE);
+            }
+            return cend();
         }
 
         /**
@@ -492,7 +548,7 @@ namespace fefu
          *  the %hash_map.
          */
         iterator end() noexcept {
-            return (table + SIZE);
+            return iterator(table + SIZE, deleted, SIZE, SIZE);
         }
 
         //@{
@@ -501,11 +557,11 @@ namespace fefu
          *  element in the %hash_map.
          */
         const_iterator end() const noexcept {
-            return (table + SIZE);
+            return cend();
         }
 
         const_iterator cend() const noexcept {
-            return (table + SIZE);
+            return const_iterator(table + SIZE, deleted, SIZE, SIZE);
         }
         //@}
 
@@ -600,9 +656,9 @@ namespace fefu
                     table[x] = new value_type(value.first, value.second);
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
-                    return {table + x, true};
+                    return { (table + x, deleted, x, SIZE), true};
                 } else if (key_equal(table[x]->first, key)) {
-                    return {table + x, false};
+                    return {(table + x, deleted, x, SIZE), false};
                 }
 
                 x = (x + i * y) % SIZE;
@@ -623,13 +679,12 @@ namespace fefu
                     table[x] = new value_type(value.first, value.second);
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
-                    return { (table + x) , true};
+                    return { iterator(table + x, deleted, x, SIZE) , true};
                 } else if (key_equal(table[x]->first, key)) {
-                    return {table + x, false};
+                    return { iterator(table + x, deleted, x, SIZE), false};
                 }
                 x = (x + i * y) % SIZE;
             }
-            return {begin(), false};
         }
 
         //@}
@@ -695,10 +750,10 @@ namespace fefu
                     table[x] = new value_type(key, obj);
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
-                    return {table + x, true};
+                    return {(table + x, deleted, SIZE), true};
                 } else if (key_equal(table[x]->first, key)) {
                     table[x]->second = obj;
-                    return {table + x, false};
+                    return {(table + x, deleted, SIZE), false};
                 }
                 x = (x + i * y) % SIZE;
             }
@@ -717,10 +772,10 @@ namespace fefu
                     table[x] = new value_type(key, obj);
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
-                    return {table + x, true};
+                    return { iterator(table + x, deleted, x, SIZE), true};
                 } else if (key_equal(table[x]->first, key)) {
                     table[x]->second = obj;
-                    return {table + x, false};
+                    return { iterator(table + x, deleted, x, SIZE), false};
                 }
                 x = (x + i * y) % SIZE;
             }
@@ -812,6 +867,7 @@ namespace fefu
          *  elements themselves are pointers, the pointed-to memory is not touched
          *  in any way.  Managing the pointer is the user's responsibility.
          */
+         //TODO
         void clear() noexcept {
             hash_map(SIZE);
             NOT_NULL_SIZE = 0;
@@ -903,7 +959,7 @@ namespace fefu
             for (int i = 1; i < SIZE; i++) {
                 if (table[x] != nullptr) {
                     if (key_equal(table[x]->first, key) && !deleted[x])
-                        return (table + x);
+                        return iterator(table + x, deleted, x, SIZE);
                 } else {
                     return end();
                 }
@@ -918,7 +974,7 @@ namespace fefu
             for (int i = 1; i < SIZE; i++) {
                 if (table[x] != nullptr) {
                     if (key_equal(table[x]->first, key) && !deleted[x])
-                        return (table + x);
+                        return iterator(table + x, deleted, x, SIZE);
                 } else {
                     return end();
                 }
