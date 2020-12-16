@@ -242,8 +242,65 @@ namespace fefu
         allocator_type table_allocator;
         allocator<bool> deleted_allocator;
 
-    public:
+        template<typename Key, typename Value>
+        std::pair<iterator, bool> insert_value_helper(Key&& key, Value&& value) {
+            auto x = firstHash(key, SIZE);
+            auto y = secondHash(key, SIZE);
+            for (int i = 1; i < SIZE; i++) {
+                if (table[x] == nullptr || deleted[x]) {
+                    table[x] = new value_type(key, value);
+                    deleted[x] = false;
+                    NOT_NULL_SIZE++;
+                    return {iterator(table + x, deleted, x, SIZE), true};
+                } else if (key_equal(table[x]->first, key)) {
+                    return {iterator(table + x, deleted, x, SIZE), false};
+                }
+                x = (x + i * y) % SIZE;
+            }
+        }
 
+        template<typename Key, typename Value>
+        std::pair<iterator, bool> insert_or_assign_value_helper(Key&& key, Value&& value) {
+            auto x = firstHash(key, SIZE);
+            auto y = secondHash(key, SIZE);
+            for (int i = 1; i < SIZE; i++) {
+                if (table[x] == nullptr || deleted[x]) {
+                    table[x] = new value_type(key, value);
+                    deleted[x] = false;
+                    NOT_NULL_SIZE++;
+                    return {iterator(table + x, deleted, x, SIZE), true};
+                } else if (key_equal(table[x]->first, key)) {
+                    table[x]->second = value;
+                    return { iterator(table + x, deleted, x, SIZE), false};
+                }
+                x = (x + i * y) % SIZE;
+            }
+        }
+
+        iterator find_value_helper(const key_type& key) {
+            auto x = firstHash(key, SIZE);
+            auto y = secondHash(key, SIZE);
+            for (int i = 1; i < SIZE; i++) {
+                if (table[x] != nullptr) {
+                    if (key_equal(table[x]->first, key) && !deleted[x])
+                        return iterator(table + x, deleted, x, SIZE);
+                } else {
+                    return end();
+                }
+                x = (x + i * y) % SIZE;
+            }
+            return end();
+        }
+
+        template<typename Key>
+        mapped_type& operator_helper(Key&& key) {
+            if(contains(key))
+                return (*find(key))->second;
+            else
+                return (*insert({key, 0}).first)->second;
+        }
+
+    public:
         /// Default constructor.
         hash_map() {
             table = table_allocator.allocate(SIZE);
@@ -649,20 +706,7 @@ namespace fefu
             if(NOT_NULL_SIZE / SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
-//            return insert_value(value.first, value.second);
-            auto x = firstHash(value.first, SIZE);
-            auto y = secondHash(value.first, SIZE);
-            for (int i = 1; i < SIZE; i++) {
-                if (table[x] == nullptr || deleted[x]) {
-                    table[x] = new value_type(value.first, value.second);
-                    deleted[x] = false;
-                    NOT_NULL_SIZE++;
-                    return { iterator(table + x, deleted, x, SIZE) , true};
-                } else if (key_equal(table[x]->first, value.first)) {
-                    return { iterator(table + x, deleted, x, SIZE), false};
-                }
-                x = (x + i * y) % SIZE;
-            }
+            return insert_value_helper(value.first, value.second);
         }
 
         std::pair<iterator, bool> insert(value_type&& value) {
@@ -671,19 +715,7 @@ namespace fefu
             if((float)NOT_NULL_SIZE / (float)SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
-            auto x = firstHash(value.first, SIZE);
-            auto y = secondHash(value.first, SIZE);
-            for (int i = 1; i < SIZE; i++) {
-                if (table[x] == nullptr || deleted[x]) {
-                    table[x] = new value_type(value.first, std::move(value.second));
-                    deleted[x] = false;
-                    NOT_NULL_SIZE++;
-                    return { iterator(table + x, deleted, x, SIZE) , true};
-                } else if (key_equal(table[x]->first, value.first)) {
-                    return { iterator(table + x, deleted, x, SIZE), false};
-                }
-                x = (x + i * y) % SIZE;
-            }
+            return insert_value_helper(std::move(value.first), std::move(value.second));
         }
 
         //@}
@@ -740,45 +772,23 @@ namespace fefu
 
         template <typename _Obj>
         std::pair<iterator, bool> insert_or_assign(const key_type& key, _Obj&& obj) {
+            if(SIZE == 0)
+                rehash(32);
             if(NOT_NULL_SIZE / SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
-            auto x = firstHash(key, SIZE);
-            auto y = secondHash(key, SIZE);
-            for (int i = 1; i < SIZE; i++) {
-                if (table[x] == nullptr || deleted[x]) {
-                    table[x] = new value_type(key, obj);
-                    deleted[x] = false;
-                    NOT_NULL_SIZE++;
-                    return {(table + x, deleted, SIZE), true};
-                } else if (key_equal(table[x]->first, key)) {
-                    table[x]->second = obj;
-                    return {(table + x, deleted, SIZE), false};
-                }
-                x = (x + i * y) % SIZE;
-            }
+            return insert_or_assign_value_helper(key, obj);
         }
 
         // move-capable overload
         template <typename _Obj>
         std::pair<iterator, bool> insert_or_assign(key_type&& key, _Obj&& obj) {
+            if(SIZE == 0)
+                rehash(32);
             if(NOT_NULL_SIZE / SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
-            auto x = firstHash(key, SIZE);
-            auto y = secondHash(key, SIZE);
-            for (int i = 1; i < SIZE; i++) {
-                if (table[x] == nullptr || deleted[x]) {
-                    table[x] = new value_type(key, std::move(obj));
-                    deleted[x] = false;
-                    NOT_NULL_SIZE++;
-                    return { iterator(table + x, deleted, x, SIZE), true};
-                } else if (key_equal(table[x]->first, key)) {
-                    table[x]->second = std::move(obj);
-                    return { iterator(table + x, deleted, x, SIZE), false};
-                }
-                x = (x + i * y) % SIZE;
-            }
+            return insert_or_assign_value_helper(std::move(key), std::move(obj));
         }
 
         //@{
@@ -964,20 +974,6 @@ namespace fefu
          *  pointing to the sought after element.  If unsuccessful it returns the
          *  past-the-end ( @c end() ) iterator.
          */
-         iterator find_value_helper(const key_type& key) {
-            auto x = firstHash(key, SIZE);
-            auto y = secondHash(key, SIZE);
-            for (int i = 1; i < SIZE; i++) {
-                if (table[x] != nullptr) {
-                    if (key_equal(table[x]->first, key) && !deleted[x])
-                        return iterator(table + x, deleted, x, SIZE);
-                } else {
-                    return end();
-                }
-                x = (x + i * y) % SIZE;
-            }
-            return end();
-         }
 
         iterator find(const key_type& key) {
             return find_value_helper(key);
@@ -1036,20 +1032,13 @@ namespace fefu
          *
          *  Lookup requires constant time.
          */
+
         mapped_type& operator[](const key_type& k) {
-            if(contains(k))
-                return (*find(k))->second;
-            else
-                return (*insert({k, 0}).first)->second;
-
-
+            return operator_helper(k);
         }
 
         mapped_type& operator[](key_type&& k) {
-            if(contains(k))
-                return (*find(k))->second;
-            else
-                return (*insert({k, 0}).first)->second;
+            return operator_helper(std::move(k));
         }
         //@}
 
@@ -1069,10 +1058,7 @@ namespace fefu
         }
 
         const mapped_type& at(const key_type& k) const {
-            if(contains(k))
-                return (*find(k))->second;
-            else
-                throw std::out_of_range("key not found");
+            return at(k);
         }
         //@}
 

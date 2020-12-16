@@ -32,6 +32,8 @@ TEST (HashMapTesting, InsertElements) {
     ASSERT_TRUE(!a.contains(30));
 
     //hash_map already contains these keys
+    auto f = a.insert({10, 's'}).second;
+    std::cout << f;
     ASSERT_TRUE(a.insert({10, 's'}).second == false);
     ASSERT_TRUE(a.insert({10, 's'}).second == false);
     ASSERT_TRUE(a.insert({10, 's'}).second == false);
