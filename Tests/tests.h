@@ -42,7 +42,7 @@ TEST (HashMapTesting, InsertElements) {
 
 //TEST (HashMapTesting, test) {
 //    fefu::hash_map<int, int> a;
-//    for(int i = 0; i < 500; i++) {
+//    for(int i = 1; i < 9; i++) {
 //        a.insert({i * 3, i * 4});
 //    }
 //

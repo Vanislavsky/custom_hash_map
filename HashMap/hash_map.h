@@ -622,7 +622,7 @@ namespace fefu
         // move-capable overload
         template <typename... _Args>
         std::pair<iterator, bool> try_emplace(key_type&& k, _Args&&... args) {
-            return insert(value_type(std::piecewise_construct, std::forward_as_tuple(k), std::forward_as_tuple(std::forward<_Args>(args)...)));
+            return insert(value_type(std::piecewise_construct, std::forward_as_tuple(std::move(k)), std::forward_as_tuple(std::forward<_Args>(args)...)));
         }
 
         //@{
@@ -642,25 +642,25 @@ namespace fefu
         *
         *  Insertion requires amortized constant time.
         */
+
         std::pair<iterator, bool> insert(const value_type& value)  {
             if(SIZE == 0)
                 rehash(32);
             if(NOT_NULL_SIZE / SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
-            auto key = value.first;
-            auto x = firstHash(key, SIZE);
-            auto y = secondHash(key, SIZE);
+//            return insert_value(value.first, value.second);
+            auto x = firstHash(value.first, SIZE);
+            auto y = secondHash(value.first, SIZE);
             for (int i = 1; i < SIZE; i++) {
                 if (table[x] == nullptr || deleted[x]) {
                     table[x] = new value_type(value.first, value.second);
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
-                    return { (table + x, deleted, x, SIZE), true};
-                } else if (key_equal(table[x]->first, key)) {
-                    return {(table + x, deleted, x, SIZE), false};
+                    return { iterator(table + x, deleted, x, SIZE) , true};
+                } else if (key_equal(table[x]->first, value.first)) {
+                    return { iterator(table + x, deleted, x, SIZE), false};
                 }
-
                 x = (x + i * y) % SIZE;
             }
         }
@@ -671,16 +671,15 @@ namespace fefu
             if((float)NOT_NULL_SIZE / (float)SIZE >= LOAD_FACTOR)
                 rehash(2 * SIZE);
 
-            auto key = value.first;
-            auto x = firstHash(key, SIZE);
-            auto y = secondHash(key, SIZE);
+            auto x = firstHash(value.first, SIZE);
+            auto y = secondHash(value.first, SIZE);
             for (int i = 1; i < SIZE; i++) {
                 if (table[x] == nullptr || deleted[x]) {
-                    table[x] = new value_type(value.first, value.second);
+                    table[x] = new value_type(value.first, std::move(value.second));
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
                     return { iterator(table + x, deleted, x, SIZE) , true};
-                } else if (key_equal(table[x]->first, key)) {
+                } else if (key_equal(table[x]->first, value.first)) {
                     return { iterator(table + x, deleted, x, SIZE), false};
                 }
                 x = (x + i * y) % SIZE;
@@ -738,6 +737,7 @@ namespace fefu
          *
          *  Insertion requires amortized constant time.
          */
+
         template <typename _Obj>
         std::pair<iterator, bool> insert_or_assign(const key_type& key, _Obj&& obj) {
             if(NOT_NULL_SIZE / SIZE >= LOAD_FACTOR)
@@ -769,12 +769,12 @@ namespace fefu
             auto y = secondHash(key, SIZE);
             for (int i = 1; i < SIZE; i++) {
                 if (table[x] == nullptr || deleted[x]) {
-                    table[x] = new value_type(key, obj);
+                    table[x] = new value_type(key, std::move(obj));
                     deleted[x] = false;
                     NOT_NULL_SIZE++;
                     return { iterator(table + x, deleted, x, SIZE), true};
                 } else if (key_equal(table[x]->first, key)) {
-                    table[x]->second = obj;
+                    table[x]->second = std::move(obj);
                     return { iterator(table + x, deleted, x, SIZE), false};
                 }
                 x = (x + i * y) % SIZE;
@@ -927,7 +927,7 @@ namespace fefu
 
             for(int i = 0; i < source.max_size(); i++) {
                 if(source.table[i]) {
-                    insert({source.table[i]->first, source.table[i]->second});
+                    insert({source.table[i]->first, std::move(source.table[i]->second)});
                 }
             }
         }
@@ -964,7 +964,7 @@ namespace fefu
          *  pointing to the sought after element.  If unsuccessful it returns the
          *  past-the-end ( @c end() ) iterator.
          */
-        iterator find(const key_type& key) {
+         iterator find_value_helper(const key_type& key) {
             auto x = firstHash(key, SIZE);
             auto y = secondHash(key, SIZE);
             for (int i = 1; i < SIZE; i++) {
@@ -977,21 +977,14 @@ namespace fefu
                 x = (x + i * y) % SIZE;
             }
             return end();
+         }
+
+        iterator find(const key_type& key) {
+            return find_value_helper(key);
         }
 
         const_iterator find(const key_type& key) const {
-            auto x = firstHash(key, SIZE);
-            auto y = secondHash(key, SIZE);
-            for (int i = 1; i < SIZE; i++) {
-                if (table[x] != nullptr) {
-                    if (key_equal(table[x]->first, key) && !deleted[x])
-                        return iterator(table + x, deleted, x, SIZE);
-                } else {
-                    return end();
-                }
-                x = (x + i * y) % SIZE;
-            }
-            return end();
+            return find_value_helper(key);
         }
         //@}
 
