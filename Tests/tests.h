@@ -42,16 +42,60 @@ TEST (HashMapTesting, InsertElements) {
 
 
 
-//TEST (HashMapTesting, test) {
-//    fefu::hash_map<int, int> a;
-//    for(int i = 1; i < 9; i++) {
-//        a.insert({i * 3, i * 4});
-//    }
-//
-////    for(int i = 0; i < 100; i++) {
-////        a.contains(i * 3);
-////    }
-//}
+TEST (HashMapTesting, StressTest) {
+    fefu::hash_map<int, int> a;
+    for(int i = 1; i < 5000; i++) {
+        a.insert({i * 3, i * 4});
+    }
+
+    for(int i = 0; i < 5000; i++) {
+        a.erase(i*3);
+    }
+
+    for(int i = 1; i < 5000; i++) {
+        a.insert({i * 3, i * 4});
+    }
+
+    for(int i = 0; i < 5000; i++) {
+        a.erase(i*3);
+    }
+
+    for(int i = 1; i < 5000; i++) {
+        a.insert({i * 3, i * 4});
+    }
+
+    for(int i = 0; i < 5000; i++) {
+        a.erase(i*3);
+    }
+
+    ASSERT_TRUE(a.empty());
+
+    for(int i = 1; i < 10000; i++) {
+        a.insert_or_assign(i * 20, i * 10);
+    }
+
+    for(int i = 0; i < 10000; i++) {
+        a.erase(i*20);
+    }
+
+    for(int i = 1; i < 10000; i++) {
+        a.insert_or_assign(i * 20, i * 10);
+    }
+
+    for(int i = 0; i < 10000; i++) {
+        a.erase(i*20);
+    }
+
+    for(int i = 1; i < 10000; i++) {
+        a.insert_or_assign(i * 20, i * 10);
+    }
+
+    for(int i = 0; i < 10000; i++) {
+        a.erase(i*20);
+    }
+
+    ASSERT_TRUE(a.empty());
+}
 
 
 
