@@ -387,14 +387,12 @@ namespace fefu
             key_equal = other.key_equal;
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            table_allocator.deallocate(other.table, other.SIZE);
-
-            for(int i = 0; i < other.SIZE; i++) {
-                table[i] = nullptr;
+            for(int i = 0; i < other.table.SIZE; i++) {
+                other.table[i] = nullptr;
             }
 
-            table = nullptr;
-            deleted = nullptr;
+            other.table = nullptr;
+            other.deleted = nullptr;
         }
 
         /**
