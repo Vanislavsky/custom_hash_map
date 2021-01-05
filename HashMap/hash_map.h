@@ -242,6 +242,13 @@ namespace fefu
         allocator_type table_allocator;
         allocator<bool> deleted_allocator;
 
+        void filling_standart_value() {
+            for(int i = 0; i < SIZE; i++) {
+                table[i] = nullptr;
+                deleted[i] = false;
+            }
+        }
+
         template<typename Key, typename Value>
         std::pair<iterator, bool> insert_value_helper(Key&& key, Value&& value) {
             auto x = firstHash(key, SIZE);
@@ -313,10 +320,14 @@ namespace fefu
 
         ~hash_map() {
             for (int i = 0; i < SIZE; i++)
-                if (table[i])
-                    delete table[i];
-            table_allocator.deallocate(table,SIZE);
-            deleted_allocator.deallocate(deleted, SIZE);
+                if(table) {
+                    if (table[i])
+                        delete table[i];
+                }
+            if(table)
+                table_allocator.deallocate(table,SIZE);
+            if(deleted)
+                deleted_allocator.deallocate(deleted, SIZE);
         }
         /**
          *  @brief  Default constructor creates no elements.
@@ -326,10 +337,7 @@ namespace fefu
             SIZE = n;
             table = table_allocator.allocate(SIZE);
             deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
         }
 
         /**
@@ -348,10 +356,7 @@ namespace fefu
             SIZE = n;
             table = table_allocator.allocate(SIZE);
             deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
 
             for(auto it = first; it != last; it++) {
                 insert({(*it)->key, (*it)->value});
@@ -363,11 +368,7 @@ namespace fefu
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
             table = table_allocator.allocate(SIZE);
-            deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
 
             for(int i = 0; i < other.SIZE; i++) {
                 if(table[i])
@@ -381,16 +382,10 @@ namespace fefu
         }
 
         /// Move constructor.
-        hash_map(hash_map&& other) : table(other.table), deleted(other.deleted) {
-            firstHash = other.firstHash;
-            secondHash = other.secondHash;
-            key_equal = other.key_equal;
-            SIZE = other.SIZE;
-            NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            for(int i = 0; i < other.table.SIZE; i++) {
-                other.table[i] = nullptr;
-            }
-
+        hash_map(hash_map&& other): table(std::move(other.table)), deleted(std::move(other.deleted)),
+        firstHash(std::move(other.firstHash)), secondHash(std::move(other.secondHash)),
+        key_equal(std::move(other.key_equal)), SIZE(other.SIZE), NOT_NULL_SIZE(other.NOT_NULL_SIZE),
+        table_allocator(std::move(other.table_allocator)), deleted_allocator(std::move(other.deleted_allocator)){
             other.table = nullptr;
             other.deleted = nullptr;
         }
@@ -403,10 +398,7 @@ namespace fefu
             table_allocator = a;
             table = table_allocator.allocate(SIZE);
             deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
         }
 
         /*
@@ -421,10 +413,7 @@ namespace fefu
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
             table = table_allocator.allocate(SIZE);
             deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
 
             for(int i = 0; i < other.SIZE; i++) {
                 if(table[i])
@@ -443,19 +432,9 @@ namespace fefu
         *  @param  a    An allocator object.
         */
         hash_map(hash_map&& other,
-                 const allocator_type& a) : table(other.table), deleted(other.deleted)  {
-            table_allocator = a;
-            firstHash = other.firstHash;
-            key_equal = other.key_equal;
-            secondHash = other.secondHash;
-            SIZE = other.SIZE;
-            NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            //table_allocator.deallocate(other.table, other.SIZE);
-
-            for(int i = 0; i < other.SIZE; i++) {
-                table[i] = nullptr;
-            }
-
+                 const allocator_type& a) : table(std::move(other.table)), deleted(std::move(other.deleted)),
+        firstHash(std::move(other.firstHash)), secondHash(std::move(other.secondHash)),
+        key_equal(std::move(other.key_equal)), SIZE(other.SIZE), NOT_NULL_SIZE(other.NOT_NULL_SIZE), table_allocator(a){
             table = nullptr;
             deleted = nullptr;
         }
@@ -473,10 +452,7 @@ namespace fefu
             SIZE = n;
             table = table_allocator.allocate(SIZE);
             deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
 
             for(int i = 0; i < l.size(); i++)
                 insert({l[i].first, l[i].second});
@@ -488,10 +464,7 @@ namespace fefu
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
             table = table_allocator.allocate(SIZE);
             deleted = deleted_allocator.allocate(SIZE);
-            for(int i = 0; i < SIZE; i++) {
-                table[i] = nullptr;
-                deleted[i] = false;
-            }
+            filling_standart_value();
 
             for(int i = 0; i < other.SIZE; i++) {
                 if(table[i])
@@ -508,18 +481,16 @@ namespace fefu
 
         /// Move assignment operator.
         hash_map& operator=(hash_map&& other) {
-            table = other.table;
-            deleted = other.deleted;
-            firstHash = other.firstHash;
-            secondHash = other.secondHash;
-            key_equal = other.key_equal;
+            table = std::move(other.table);
+            deleted = std::move(other.deleted);
+            firstHash = std::move(other.firstHash);
+            secondHash = std::move(other.secondHash);
+            key_equal = std::move(other.key_equal);
+            table_allocator = std::move(other.table_allocator);
+            deleted_allocator = std::move(other.deleted_allocator);
+
             SIZE = other.SIZE;
             NOT_NULL_SIZE = other.NOT_NULL_SIZE;
-            table_allocator.deallocate(other.table, other.SIZE);
-
-            for(int i = 0; i < other.SIZE; i++) {
-                table[i] = nullptr;
-            }
 
             table = nullptr;
             deleted = nullptr;

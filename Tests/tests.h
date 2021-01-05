@@ -9,6 +9,23 @@
 #include <gmock/gmock.h>
 #include "../HashMap/hash_map.h"
 
+
+TEST (HashMapTesting, MoveConstructorTest) {
+    fefu::hash_map<int, char> a;
+    a.insert({10, 's'});
+    a.insert({11, 'd'});
+    a.insert({12, 'w'});
+    a.insert({21, 'a'});
+    a.erase(10);
+    a.erase(11);
+
+    fefu::hash_map<int, char> b(std::move(a));
+    ASSERT_TRUE(b.contains(12));
+    ASSERT_TRUE(b.contains(21));
+
+
+}
+
 TEST (HashMapTesting, InsertElements) {
     fefu::hash_map<int, char> a;
     a.insert({10, 's'});
@@ -42,60 +59,60 @@ TEST (HashMapTesting, InsertElements) {
 
 
 
-TEST (HashMapTesting, StressTest) {
-    fefu::hash_map<int, int> a;
-    for(int i = 1; i < 5000; i++) {
-        a.insert({i * 3, i * 4});
-    }
-
-    for(int i = 0; i < 5000; i++) {
-        a.erase(i*3);
-    }
-
-    for(int i = 1; i < 5000; i++) {
-        a.insert({i * 3, i * 4});
-    }
-
-    for(int i = 0; i < 5000; i++) {
-        a.erase(i*3);
-    }
-
-    for(int i = 1; i < 5000; i++) {
-        a.insert({i * 3, i * 4});
-    }
-
-    for(int i = 0; i < 5000; i++) {
-        a.erase(i*3);
-    }
-
-    ASSERT_TRUE(a.empty());
-
-    for(int i = 1; i < 10000; i++) {
-        a.insert_or_assign(i * 20, i * 10);
-    }
-
-    for(int i = 0; i < 10000; i++) {
-        a.erase(i*20);
-    }
-
-    for(int i = 1; i < 10000; i++) {
-        a.insert_or_assign(i * 20, i * 10);
-    }
-
-    for(int i = 0; i < 10000; i++) {
-        a.erase(i*20);
-    }
-
-    for(int i = 1; i < 10000; i++) {
-        a.insert_or_assign(i * 20, i * 10);
-    }
-
-    for(int i = 0; i < 10000; i++) {
-        a.erase(i*20);
-    }
-
-    ASSERT_TRUE(a.empty());
-}
+//TEST (HashMapTesting, StressTest) {
+//    fefu::hash_map<int, int> a;
+//    for(int i = 1; i < 5000; i++) {
+//        a.insert({i * 3, i * 4});
+//    }
+//
+//    for(int i = 0; i < 5000; i++) {
+//        a.erase(i*3);
+//    }
+//
+//    for(int i = 1; i < 5000; i++) {
+//        a.insert({i * 3, i * 4});
+//    }
+//
+//    for(int i = 0; i < 5000; i++) {
+//        a.erase(i*3);
+//    }
+//
+//    for(int i = 1; i < 5000; i++) {
+//        a.insert({i * 3, i * 4});
+//    }
+//
+//    for(int i = 0; i < 5000; i++) {
+//        a.erase(i*3);
+//    }
+//
+//    ASSERT_TRUE(a.empty());
+//
+//    for(int i = 1; i < 10000; i++) {
+//        a.insert_or_assign(i * 20, i * 10);
+//    }
+//
+//    for(int i = 0; i < 10000; i++) {
+//        a.erase(i*20);
+//    }
+//
+//    for(int i = 1; i < 10000; i++) {
+//        a.insert_or_assign(i * 20, i * 10);
+//    }
+//
+//    for(int i = 0; i < 10000; i++) {
+//        a.erase(i*20);
+//    }
+//
+//    for(int i = 1; i < 10000; i++) {
+//        a.insert_or_assign(i * 20, i * 10);
+//    }
+//
+//    for(int i = 0; i < 10000; i++) {
+//        a.erase(i*20);
+//    }
+//
+//    ASSERT_TRUE(a.empty());
+//}
 
 
 
